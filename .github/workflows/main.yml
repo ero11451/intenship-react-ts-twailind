@@ -1,1 +1,41 @@
-Cm5hbWU6IEF1dG8gRGVwbG95IHRvIEF6dXJlIEFwcCBTZXJ2aWNlCgpvbjoKICBwdXNoOgogICAgYnJhbmNoZXM6CiAgICAgIC0gbWFpbgoKam9iczoKICBkZXBsb3k6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CgogICAgc3RlcHM6CiAgICAgIC0gbmFtZTogQ2hlY2tvdXQgQ29kZQogICAgICAgIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjMKCiAgICAgIC0gbmFtZTogU2V0IHVwIE5vZGUuanMKICAgICAgICB1c2VzOiBhY3Rpb25zL3NldHVwLW5vZGVAdjMKICAgICAgICB3aXRoOgogICAgICAgICAgbm9kZS12ZXJzaW9uOiAxNC54CiAgICAgICAgICBjYWNoZTogJ25wbScKCiAgICAgIC0gbmFtZTogSW5zdGFsbCBEZXBlbmRlbmNpZXMKICAgICAgICBydW46IHwKICAgICAgICAgIG5wbSBpbnN0YWxsIHx8IChlY2hvICfinYwgRmFpbGVkIHRvIGluc3RhbGwgZGVwZW5kZW5jaWVzIScgJiYgZXhpdCAxKQoKICAgICAgLSBuYW1lOiBCdWlsZCBQcm9qZWN0CiAgICAgICAgcnVuOiB8CiAgICAgICAgICBucG0gcnVuIGJ1aWxkIC0taWYtcHJlc2VudCB8fCAoZWNobyAnQnVpbGRpbmcgcHJvamVjdC4uLicpCiAgICAgICAgICBucG0gcnVuIHRlc3QgLS1pZi1wcmVzZW50IHx8IChlY2hvICfinYwgQnVpbGQgZmFpbGVkIScgJiYgZXhpdCAxKQoKICAgICAgLSBuYW1lOiBMb2dpbiB0byBBenVyZQogICAgICAgIHVzZXM6IGF6dXJlL2xvZ2luQHYxCiAgICAgICAgd2l0aDoKICAgICAgICAgIGNyZWRzOiAke3sgc2VjcmV0cy5BWlVSRV9DUkVERU5USUFMUyB9fQoKICAgICAgLSBuYW1lOiBEZXBsb3kgdG8gQXp1cmUgV2ViIEFwcAogICAgICAgIHVzZXM6IGF6dXJlL3dlYmFwcHMtZGVwbG95QHYyCiAgICAgICAgd2l0aDoKICAgICAgICAgIGFwcC1uYW1lOiB0ZXN0aW5nX2hvc3RpbmcKICAgICAgICAgIHBhY2thZ2U6IC4K
+
+name: Auto Deploy to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14.x
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm install || (echo '❌ Failed to install dependencies!' && exit 1)
+
+      - name: Build Project
+        run: |
+          npm run build --if-present || (echo 'Building project...')
+          npm run test --if-present || (echo '❌ Build failed!' && exit 1)
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: testing_hosting
+          package: .
